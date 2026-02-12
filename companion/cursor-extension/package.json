@@ -1,0 +1,43 @@
+{
+  "name": "cursor-telemetry-extension",
+  "displayName": "Cursor Telemetry Extension",
+  "description": "Captures Cursor AI conversations for analytics",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorTelemetry.capturePrompt",
+        "title": "Cursor Telemetry: Capture Current Prompt"
+      },
+      {
+        "command": "cursorTelemetry.toggleMonitoring",
+        "title": "Cursor Telemetry: Toggle Monitoring"
+      }
+    ],
+    "configuration": {
+      "title": "Cursor Telemetry",
+      "properties": {
+        "cursorTelemetry.apiEndpoint": {
+          "type": "string",
+          "default": "http://localhost:43917",
+          "description": "Telemetry API endpoint"
+        },
+        "cursorTelemetry.autoCapture": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically capture prompts"
+        }
+      }
+    }
+  }
+}

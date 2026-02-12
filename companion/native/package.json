@@ -1,0 +1,33 @@
+{
+  "name": "@cursor-telemetry/native",
+  "version": "1.0.0",
+  "description": "Native Rust module for high-performance operations",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "cursor-telemetry-native",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-pc-windows-msvc"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "artifacts": "napi artifacts",
+    "version": "napi version",
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "engines": {
+    "node": ">= 10"
+  }
+}

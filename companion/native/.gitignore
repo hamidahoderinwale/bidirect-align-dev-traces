@@ -1,0 +1,21 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Node.js native build artifacts
+*.node
+*.a
+*.so
+*.dylib
+*.dll
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+

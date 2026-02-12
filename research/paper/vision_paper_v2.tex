@@ -1,0 +1,333 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\title{Learning from AI-Assisted Developer Workflows}
+\author{Hamidah Oderinwale\\
+University of Luxembourg\\
+\texttt{hamidah.oderinwale@uni.lu}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\vspace{-0.5em}
+\begin{center}
+\small\href{https://hamidah.me/}{Hamidah Oderinwale}
+\end{center}
+\vspace{0.5em}
+
+\begin{abstract}
+AI-augmented programming has become ubiquitous, with developers increasingly working through iterative, prompt-driven interactions with code generation systems. While recent training paradigms have begun to incorporate developer traces, three fundamental gaps remain: (1) we lack a principled identification of what signals in real workflows are actually learnable and valuable, (2) we do not yet understand how those signals should be used to evaluate and improve code agents, and (3) we have no representation layer that makes raw IDE telemetry comparable, shareable, and governable at scale.
+
+We argue that the next generation of AI evaluation must move from static benchmarks to \emph{in-vivo} measurement of real developer--agent workflows through \emph{controlled abstraction}. By progressively compressing telemetry into structured abstractions (files, motifs, context flows), we expose the strategic structure of how software is produced while forgetting incidental detail. This enables \emph{evals in the wild}: systems, IDEs, and prompting styles can be compared by the workflows they induce, not just by the code they output. We outline how this representation substrate supports personalization, collective learning, and governance of AI-assisted software engineering.
+\end{abstract}
+
+\section{Introduction}
+
+AI-augmented programming has become ubiquitous. Most developers now leverage LLMs for software development, with tools like GitHub Copilot, Cursor, and ChatGPT integrated into daily workflows. This shift has accelerated code generation but exposed fundamental limitations in how we evaluate and improve AI-assisted development. Current evaluation systems---benchmarks like HumanEval~\citep{chen2021evaluating}, MBPP~\citep{austin2021program}, and SWE-bench~\citep{jimenez2024swebenchlanguagemodelsresolve}---measure performance on isolated programming puzzles, assuming tasks are well-defined and success criteria are enumerable. These benchmarks evaluate outputs, not workflows: an AI that produces correct code through 50 trial-and-error attempts scores identically to one that succeeds immediately, yet iteration cost matters because developers must understand, review, and extend AI-generated code.
+
+Software systems have grown into digital ecosystems too large for any one person to understand. The Linux kernel spans 30 million lines; Google's monorepo exceeds two billion. At this scale, developers no longer write functions---they orchestrate changes across modules, navigate dependency graphs, and coordinate with tools that generate code autonomously. Software development depends on cumulativity---building on prior work rather than starting from scratch. Progress requires developers to return to code, understand what was done and why, and extend it meaningfully. This holds at multiple scales: individually, when revisiting one's own repository months later; interpersonally, when inheriting a codebase after original context has faded.
+
+AI makes execution cheap but makes cumulativity fragile~\citep{khattab2023dspy}. This follows a long-standing pattern in programming paradigms: as abstraction increases, code becomes more expressive for specific tasks but less reusable across contexts. Assembly code is verbose but general; procedural code trades reusability for expressiveness; declarative artifacts such as SQL, configuration files, and UI components are highly expressive but short-lived. AI-generated code inherits this pattern: models generate code optimized to satisfy a specific prompt, not to support future extension. When rewriting becomes cheaper than understanding and modifying existing code, the rational choice shifts toward replacement rather than extension, predicting shorter half-lives for AI-generated artifacts.
+
+While new training paradigms for code generation increasingly rely on learning from developer traces, three key gaps remain. First, we lack comprehensive identification of learnable signals from these traces---what procedural patterns, engineering constraints, and workflow properties can be extracted and used for training? Second, we do not understand how these signals can optimize model performance on coding tasks---which representations generalize, which preserve privacy, and which enable effective evaluation? Third, we need effective methods for representing raw logs to maximize their utility---raw IDE logs are too noisy and sensitive to analyze directly, requiring abstraction hierarchies that trade expressiveness for privacy in predictable ways.
+
+This paper addresses these gaps by introducing a companion system that captures Cursor telemetry data, enumerating the recordable parameters and highlighting different dimensions for workspace analysis. We propose a framework for "in-vivo" code generation evaluations that enables studying and optimizing developer workflows at scale. Our analysis of 40,000+ sessions reveals that workflows exhibit network properties (reproduction numbers, cascade structures, small-world clustering) providing vocabulary for understanding development processes. We demonstrate multi-scale analytics over these traces---extracting representations at six abstraction levels and showing that abstraction trades expressiveness for privacy in predictable ways (motifs achieve 98.4\% classification accuracy with 242$\times$ compression; structural patterns generalize across languages where token sequences do not). These findings motivate a vision for crowdsourced workflow analytics that discovers evaluation axes through representational variation rather than assuming them a priori.
+
+\section{Why Learn from Traces?}
+
+Software development can be understood as producing a desired artifact under budget constraints. For humans, budget means time, attention, and cognitive effort. For machines, it means context length, computation, and latency. Both must allocate across the same stages: acquiring context, forming a plan, and executing changes. While context appears free, it is not---for humans, acquiring context requires sustained effort to read, interpret, and model complex systems; for models, context loads mechanically but consumes tokens. The asymmetry sharpens during synthesis: human decoding involves forming intent and planning modifications; machine decoding is generative output. AI-assisted tools change not only execution speed but budget allocation across the entire pipeline.
+
+Repository-level representations capture what code exists but not how it came to be. Function-level snapshots miss the iterative cycles of prompt, edit, and verification that characterize AI-assisted work. As AI makes generation cheap, the process of development---how intent is expressed, refined, and validated---becomes more valuable than any single output~\citep{goel2019learning,ross2025modeling}.
+
+Traces reveal which approaches succeed and which fail. When a developer reverts an AI-generated change, that signal is lost in final artifacts but preserved in traces. When a refactoring cascades through 20 files versus 3, traces capture the difference. When two developers solve the same problem through test-first versus implement-then-verify workflows, traces distinguish them even when final code is identical. Current AI training relies on outcome-level feedback---final code and quality ratings---that discards procedural information about how developers solve problems.
+
+More fundamentally, traces capture engineering intuition and procedural constraints that static code does not encode. How developers handle error conditions, when they add synchronization, how they manage memory---these "unspoken constraints" are procedural knowledge embedded in workflows, not syntactic patterns in artifacts. AI systems trained on static code learn to generate volume but miss the engineering judgment that distinguishes production-quality code from low-level slop. Workflow traces reveal these patterns: when developers catch specific exceptions versus letting others propagate, how they sequence operations to avoid race conditions, which abstractions they choose to manage complexity. Learning from traces, especially at higher abstraction levels, could enable AI systems to learn these procedural patterns rather than just generating code.
+
+Individual traces are noisy; aggregated traces reveal patterns. Across thousands of sessions, we can identify which file structures resist cascading changes, which prompt patterns lead to fewer revisions, and which workflows correlate with successful outcomes. This collective intelligence is inaccessible from static artifacts alone.
+
+Traces enable in-vivo assessment---observing development as it happens rather than post-hoc analysis of completed artifacts. This reveals context selection patterns, documentation-code coupling, prompt effectiveness, and workflow archetypes that emerge across sessions. Recent work has begun exploring learning from execution traces~\citep{faircodegenteam2025cwmopenweightsllmresearch}, suggesting that trajectory-based learning beyond static artifacts is valuable for code understanding, which motivates our analysis of development traces to understand how code is created.
+
+\section{The Limits of Current Benchmarks}
+
+Existing evaluation schemes assume the relevant axes of evaluation are already known. They presuppose which properties matter---accuracy, latency, robustness---and measure performance along those predefined dimensions. This assumption breaks down when the object of learning is ill-defined, noisy, or only meaningful after abstraction.
+
+Code generation benchmarks like HumanEval, MBPP, and SWE-bench~\citep{jimenez2024swebenchlanguagemodelsresolve} exemplify this limitation. They assume the task is defined, the unit of analysis is stable, and the axes of interest are enumerable. This works for isolated programming puzzles but fails for procedural activity, exploratory workflows, and collaborative systems where what matters is not known until structure is imposed.
+
+Benchmarks evaluate outputs, not workflows. An AI that produces correct code through 50 trial-and-error attempts scores identically to one that succeeds immediately---yet iteration cost matters because developers must understand, review, and extend AI-generated code. Benchmarks capture a moment in time; they cannot measure whether AI assistance improves over repeated interactions, whether developers learn to prompt more effectively, or whether generated code proves extensible months later.
+
+Raw traces present the opposite problem: they are overcomplete, noisy, and identity-heavy. Models can succeed by memorization, privacy violations masquerade as performance, and spurious correlations dominate. A signal that disappears under modest abstraction was never a robust axis of evaluation.
+
+Developer traces constitute natural experiments in a non-equilibrium system. Developers pursue diverse preferences and goals---optimizing for speed versus maintainability, exploring versus exploiting, prototyping versus productionizing. There is no single equilibrium because trajectories depend on these heterogeneous objectives, exogenous constraints (deadlines, API changes, tool affordances), and path-dependent choices. This calls for new evaluation paradigms that measure transitions and responses rather than aggregate outcomes.
+
+We propose an alternative: rather than fixing evaluation axes a priori, vary the representational lens and observe which axes emerge as stable. This discovers which dimensions of behavior are invariant, meaningful, and learnable under abstraction---evaluation by controlled forgetting.
+
+\section{Toward Analytics at Scale}
+
+We envision development environments providing real-time transparency into AI model behavior based on crowdsourced workflow history.
+
+Current benchmarks are top-down: researchers define tasks and measure pass rates. An alternative derives evaluation signals from real traces~\citep{donyehiya2024future}---identifying model-task pairs where users frequently revert changes, engage in revision cycles, or exhibit low efficiency. This enables sovereign telemetry: organizations learn from aggregate patterns without exposing IP.
+
+Prior work points toward this vision. Clio~\citep{clio2024} demonstrated that clustering millions of conversations reveals usage patterns while preserving privacy through aggregation. OverCode~\citep{glassman2015overcode} showed that canonicalizing student solutions enables comparison across thousands of programs by abstracting surface variation. However, both face limitations for AI-assisted development. Clio clusters prompts based on embedding similarity, but prompts alone are a narrow window---they miss the code changes that result, the files navigated, the tests run, and the reverts that follow. Clustering techniques designed for text conversations do not capture the multi-modal, temporally-structured nature of development workflows.
+
+AI-augmented development produces richer observable signals: not just what developers ask, but what they do before and after. Code changes carry structural information (AST operations, file dependencies) absent from natural language. Terminal commands reveal build and test cycles. File navigation exposes attention patterns. These modalities require new techniques for aggregation---closer to process mining than conversation clustering. Our abstraction hierarchy addresses this: rather than embedding prompts into a shared space, we extract typed representations that preserve procedural structure while enabling comparison across developers, projects, and languages.
+
+Workflow metadata enables richer evaluation than pass/fail testing. Observable properties include cascade footprint (total files affected, reproduction number $R_0$), structural preservation (whether modularity holds after changes), motif efficiency (prompt-edit cycles to completion), context utilization (whether selected context was actually used), and handoff readiness (whether another developer can resume). These properties are extractable and queryable once workflows are represented in structured form.
+
+\section{The Companion System}
+
+We introduce a system for capturing development traces from Cursor, an AI-augmented IDE. AI-assisted development spans multiple interfaces---integrated IDEs, CLI tools, chatbots, and browser platforms---each capturing different aspects of workflows. Some interfaces capture only prompts; others observe code changes but miss navigation; still others capture sandboxed activity but exclude local tools. This heterogeneity reinforces the need for interface-agnostic representations that preserve workflow structure independent of interaction mode. We focus on IDE-integrated assistance as it captures the full development lifecycle: file navigation, context switching, iterative editing, and AI interactions within a single workspace. We define our representations along the principal dimensions of a workspace: files (what exists), motifs (recurring procedural patterns), and tokens (semantic units), which are then segmented into events. Temporality is a key feature of traces, enabling us to measure efficiency in multiple ways: time to completion, iteration count, context utilization, and revision cycles.
+
+The companion service operates as a local SQLite-backed logger capturing events in real-time, grouped by session. Events are timestamped and typed, enabling reconstruction of developer actions. The service exposes both a database interface for batch analysis and an API for live telemetry streaming.
+
+The system records five event types (Table~\ref{tab:companion}): code changes (file modifications with diffs and line counts), prompts (natural language requests including full text and response), context snapshots (files included in AI context windows), terminal commands (shell commands with exit codes and duration), and conversations (metadata linking prompts within dialogues, including session identifiers).
+
+\begin{table}[t]
+\centering
+\caption{Companion system event types and captured fields}
+\label{tab:companion}
+\small
+\begin{tabular}{lp{7cm}}
+\toprule
+Event Type & Fields Captured \\
+\midrule
+Code change & file path, diff, lines added/removed, timestamp, session \\
+Prompt & prompt text, response, model, context files, timestamp \\
+Context snapshot & files in context, token counts, truncation status \\
+Terminal command & command, working directory, exit code, duration \\
+Conversation & conversation ID, prompt sequence, session ID \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Over 78 days, the companion system captured 40,000+ sessions, 124,000+ prompts, and 614,000+ terminal commands with negligible overhead. The architecture---local storage with optional API exposure---instantiates selective sharing: developers retain raw traces locally while choosing what to export at what abstraction level.
+
+\section{From traces to representations}
+
+Raw telemetry is too noisy and too private to be used directly. We therefore define a hierarchy of representations that progressively abstract workflows into structured objects: files (what exists and changes), motifs (recurring procedural subsequences), and context flows (how attention and dependency propagate through a workspace over time).
+
+We treat each developer trace as a sequence over a small alphabet of typed events such as prompt, edit, test, error, navigation, and commit. \emph{Grammar induction} refers to methods that discover recurring structure in these sequences. Sequential pattern mining algorithms such as PrefixSpan identify frequent subsequences, while grammar-based compression methods such as Sequitur introduce reusable rules whenever patterns repeat. In our setting, the induced rules correspond to \emph{motifs}: compact procedural building blocks like debug loops, refactoring bursts, or configuration cascades.
+
+Motifs are augmented with LLM-generated intent labels, yielding a vocabulary of higher-level strategies such as test-first development, plan-then-implement, or trial-and-error debugging. These motifs sit between raw telemetry and hand-designed task labels. They are compact enough to compare across developers and agents, but structured enough to preserve how work is done. Grammar induction is not intended to recover a single ``true'' grammar of engineering, but to extract minimal sufficient procedural units that distinguish qualitatively different ways of achieving the same outcome.
+
+This abstraction hierarchy learns increasingly disentangled representations of developer behavior: motifs encode procedural factors, semantic edits encode structural intent, and module graphs encode architectural coupling. This is directly analogous to representation learning~\citep{lake2016building}, where each rung learns increasingly disentangled factors of variation. It also relates to library learning approaches~\citep{wang2020library} that discover reusable abstractions from structured data, but applied to procedural sequences rather than object concepts.
+
+As AI makes generation cheap, the process of development---how intent is expressed, refined, and validated---becomes more valuable than any single output~\citep{goel2019learning,ross2025modeling}. Repository-level representations capture what code exists but not how it came to be. Function-level snapshots miss the iterative cycles of prompt, edit, and verification that characterize AI-assisted work.
+
+\paragraph{Worked motif example.}
+Consider two developers fixing the same failing test. One follows a trial-and-error loop:
+\[
+\texttt{Prompt} \rightarrow \texttt{Edit} \rightarrow \texttt{Test} \rightarrow \texttt{Error} \rightarrow \texttt{Edit} \rightarrow \texttt{Test} \rightarrow \texttt{Pass}.
+\]
+Another writes a short plan before coding:
+\[
+\texttt{Prompt} \rightarrow \texttt{Plan} \rightarrow \texttt{Edit} \rightarrow \texttt{Test} \rightarrow \texttt{Pass}.
+\]
+Both reach the same outcome, but grammar induction yields different motifs: a repeated debug loop in the first case, and a plan-then-implement motif in the second. These motifs capture different engineering strategies. They also expose efficiency: the first approach may require many test cycles and minutes of work, while the second may converge in a single iteration. Aggregated across sessions, motif distributions therefore reveal not only what works, but how quickly and reliably different strategies succeed.
+
+These representations enable procedural comparison even when surface code differs. Two developers or two agents may produce similar outputs, yet follow very different paths through the codebase. Motifs and context flows reveal how they structured work, managed information, and responded to feedback.
+
+Structural patterns generalize better than raw content~\citep{yun2023emergence}. Patterns like INTENT\_DEBUG $\rightarrow$ ADD\_FUNCTION $\rightarrow$ TEST work across Python, TypeScript, and Java; token sequences are language-specific. This abstraction hierarchy mirrors abstract interpretation~\citep{cousot1977abstract}, where each rung defines an abstract domain trading precision (distinguishing details) for soundness (preserved structural patterns), with the expressiveness-privacy trade-off analogous to the soundness-precision trade-off in static analysis.
+
+\section{Why representations enable evals in the wild}
+
+Representations turn workflows into objects that can be measured, compared, and optimized. We define \emph{intra-trace similarity} as the stability of a strategy under abstraction, and \emph{inter-trace dissimilarity} as the ability to distinguish different strategies. Their gap measures whether a representation preserves strategic structure while compressing noise.
+
+This metric is analogous to clustering objectives such as k-means, but applied to procedural data. It allows us to ask whether a representation collapses too much or preserves too little, and thus whether it is suitable for evaluation, personalization, or sharing. Two agents (or two IDE configurations) are evaluated by comparing the distributions of motifs, context flows, and error-recovery patterns they induce when solving the same class of tasks. Evaluation becomes distributional: which system converges faster, triggers fewer cascades, or uses more stable strategies.
+
+Abstraction is compression. This creates a rate--distortion tradeoff: we forget identity-specific detail (rate) while preserving strategic structure (distortion). Good lenses sit on the Pareto frontier between privacy and expressiveness.
+
+\section{Multi-Scale Analytics}
+
+The core technical contribution is a framework for multi-scale analytics over developer traces. Rather than analyzing at a single resolution, we extract representations at multiple abstraction levels. The key insight is that \emph{different lenses reveal different dimensions of the same workflow}---switching abstraction levels answers different questions and surfaces patterns invisible at other scales.
+
+We define six rungs (Table~\ref{tab:abstraction}), each a deterministic extraction function trading compression for expressiveness. Crucially, each rung captures a distinct dimension of the workspace: 1) \textbf{raw events} preserve complete sequences including code and prompts---the full record of what happened, 2) \textbf{tokens} canonicalize identifiers while preserving temporal order---capturing the rhythm and vocabulary of development, 3) \textbf{semantic edits} extract AST-level operations (ADD\_FUNCTION, MODIFY\_CLASS)---the structural intent behind changes, 4) \textbf{functions} aggregate by signature and change count---the API-level view of what evolved, 5) \textbf{module graph} captures file-level dependencies and co-modification patterns---the architectural dimension, and 6) \textbf{motifs} discover recurring workflow patterns via PrefixSpan and Sequitur---the procedural abstractions that recur across sessions.
+
+\subsection{What Each Lens Reveals}
+
+The same workflow viewed through different lenses answers fundamentally different questions. Consider a refactoring session that modifies a function signature and updates call sites across multiple files:
+
+\begin{itemize}
+\item \textbf{Token lens}: Reveals vocabulary patterns---variable naming conventions, code style, language-specific idioms. Answers ``What coding style does this developer prefer?'' or ``How do they name variables?'' Useful for code completion evaluation and style analysis, but language-specific and privacy-sensitive.
+
+\item \textbf{Semantic edits lens}: Reveals structural change patterns---the sequence of AST operations (ADD\_FUNCTION, MODIFY\_SIGNATURE, UPDATE\_CALLS). Answers ``What structural changes were made?'' or ``What refactoring patterns emerge?'' Enables refactoring detection and change impact analysis while preserving intent without exposing code.
+
+\item \textbf{Functions lens}: Reveals API evolution---which function signatures changed, how interfaces evolved, which modules were affected. Answers ``How did the API change?'' or ``Which interfaces are most stable?'' Enables cross-project comparison and interface stability analysis, abstracting away implementation details.
+
+\item \textbf{Module graph lens}: Reveals architectural coupling---file dependencies, co-modification patterns, architectural boundaries. Answers ``How are modules coupled?'' or ``Which files change together?'' Enables architectural drift analysis and dependency management, revealing design patterns invisible at code level.
+
+\item \textbf{Motifs lens}: Reveals workflow archetypes---procedural templates like INTENT\_REFACTOR $\rightarrow$ MODIFY\_SIGNATURE $\rightarrow$ UPDATE\_CALLS that recur across sessions. Answers ``What workflow patterns emerge?'' or ``How do developers typically refactor?'' Enables cross-language pattern discovery and procedural knowledge extraction, revealing shared structures across Python, TypeScript, and Java implementations.
+\end{itemize}
+
+This multi-lens view enables \emph{discovery through abstraction}: patterns invisible at the token level (like cross-language procedural templates) emerge at the motif level, while details necessary for fine-grained analysis (like exact variable names) are preserved at lower abstraction levels. The framework enables asking questions that span multiple scales: ``Find similar refactoring patterns'' requires motif-level comparison, while ``Show me the exact changes'' requires semantic-edit or token-level detail.
+
+\begin{table}[t]
+\centering
+\caption{Abstraction hierarchy with compression ratios (40K sessions)}
+\label{tab:abstraction}
+\small
+\begin{tabular}{lccl}
+\toprule
+Rung & Compression & Privacy & Dimension captured \\
+\midrule
+Raw & 1$\times$ & Low & Complete record \\
+Tokens & 10$\times$ & Medium & Vocabulary, temporal rhythm \\
+Semantic edits & 11$\times$ & Medium & Structural intent \\
+Functions & 39$\times$ & High & API evolution \\
+Module graph & 40$\times$ & High & Architectural coupling \\
+Motifs & 242$\times$ & High & Procedural patterns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Abstraction is compression, and compression narrows the focus of an evaluator~\citep{miller1956magical}. A developer reviewing 40,000 sessions cannot inspect raw traces; they need representations that surface relevant structure while hiding irrelevant detail~\citep{gero2024sensemaking}. The 242$\times$ compression from raw to motifs reduces cognitive load: at the motif level, a developer sees workflow patterns (test-first, refactor-then-extend) rather than individual keystrokes.
+
+Different rungs suit different tasks. Tokens support fine-grained debugging and code completion evaluation. Semantic edits support refactoring detection and change impact analysis (53.1\% Recall@5). Functions support API evolution and interface stability (80.9\% classification). Modules support architectural drift analysis. Motifs support workflow classification (98.4\% accuracy with 57 bytes), procedural search, and governance.
+
+Structural patterns generalize better than raw content~\citep{yun2023emergence}. Motifs achieve 98.4\% classification accuracy; raw tokens achieve 69.7\%. Patterns like INTENT\_DEBUG $\rightarrow$ ADD\_FUNCTION $\rightarrow$ TEST work across Python, TypeScript, and Java; token sequences are language-specific. The uniqueness ratio drops from 100\% (raw) to 51.9\% (motifs), revealing shared underlying structure.
+
+This motivates lens-level ablations: rather than ablating model components, we ablate representational access and measure performance degradation. This reveals which abstractions suffice for which tasks---asking not ``How well does the model perform?'' but ``Which aspects of behavior survive abstraction?''
+
+\subsection{Evaluation by Controlled Forgetting}
+
+The abstraction hierarchy enables a novel evaluation paradigm: \emph{evaluation by controlled forgetting}. Rather than fixing evaluation axes a priori, we vary the representational lens and observe which dimensions remain stable under abstraction. This discovers which aspects of developer behavior are invariant, meaningful, and learnable.
+
+Consider the question ``How do developers debug errors?'' Viewed through different lenses:
+
+\begin{itemize}
+\item \textbf{Token lens}: Answers ``What error messages appear?'' or ``What code patterns correlate with bugs?'' Language-specific, privacy-sensitive, but captures surface-level details.
+
+\item \textbf{Semantic edits lens}: Answers ``What structural changes fix bugs?'' Reveals exception handling patterns, error recovery strategies, but still code-specific.
+
+\item \textbf{Motifs lens}: Answers ``What workflow patterns characterize debugging?'' Reveals procedural templates like INTENT\_DEBUG $\rightarrow$ ADD\_TEST $\rightarrow$ MODIFY\_FUNCTION that generalize across languages and projects.
+\end{itemize}
+
+If a pattern survives abstraction from tokens to motifs, it represents a robust signal---a structural invariant that generalizes across implementations. If a pattern disappears under modest abstraction, it was likely noise or implementation-specific detail. This lens-based discovery reveals which evaluation dimensions are meaningful: workflow patterns (captured by motifs) are stable across abstraction, while surface-level details (captured by tokens) are not.
+
+This approach inverts traditional evaluation: instead of assuming what matters and measuring it, we discover what matters by observing what survives abstraction. The framework enables discovering new evaluation axes---patterns invisible at raw level but revealed through abstraction, like cross-language procedural templates or architectural coupling patterns.
+
+Higher rungs discard identifying details while preserving structural regularities. At the motif level, distinct implementations collapse to behavioral equivalence classes, naturally satisfying $k$-anonymity ($k \approx 1.93$) while remaining expressive for learning. This abstraction hierarchy mirrors abstract interpretation~\citep{cousot1977abstract}, where each rung defines an abstract domain trading precision (distinguishing details) for soundness (preserved structural patterns), with the expressiveness-privacy trade-off analogous to the soundness-precision trade-off in static analysis.
+
+\subsection{Patterns Revealed Through Abstraction}
+
+Abstraction doesn't just compress---it reveals patterns invisible at raw level. Consider cross-language pattern discovery: at the token level, Python and TypeScript implementations of the same algorithm look completely different. At the motif level, they share procedural templates: INTENT\_FEATURE $\rightarrow$ ADD\_FUNCTION $\rightarrow$ ADD\_TEST $\rightarrow$ REFACTOR. This reveals that \emph{procedural knowledge generalizes across languages} even when syntactic patterns do not.
+
+Similarly, architectural patterns emerge at module-graph level that are invisible at function level: co-modification clusters reveal architectural boundaries, dependency cycles expose design flaws, and cascade patterns show how changes propagate. These patterns are not artifacts of abstraction---they represent genuine structural properties of workflows that only become visible when surface-level detail is removed.
+
+The framework enables discovering new types of analytics impossible at raw level: workflow archetypes (test-first vs. implement-then-verify), procedural templates (error-handling patterns, refactoring strategies), and cross-project patterns (how different teams solve similar problems). These insights emerge from abstraction, not despite it.
+
+\section{Comparing and Clustering Workflows}
+
+Structured representations enable comparing, clustering, and interpreting workflows without inspecting raw code.
+
+Within-trace similarity measures how well a representation preserves information about the original workflow. Cross-trace similarity measures background similarity between different workflows. The gap serves as a privacy proxy: large gaps mean traces remain distinguishable; small gaps mean they blend together.
+
+We operationalize this through reconstruction tests: given representations at different abstraction levels, how similar are LLM-generated descriptions of each? This measures how procedural intent drifts as you climb the ladder. Aggregated across traces, this yields an expressiveness curve tied to privacy and compression.
+
+Clustering at the motif level reveals recurring patterns across developers, projects, and languages. Unlike approaches requiring massive datasets for differential privacy, our hierarchy enables meaningful clustering at smaller scales---100 traces at the motif level yield stable patterns, versus 10,000 at the token level. This makes workflow analytics accessible to individuals and small teams.
+
+\section{Why Compression Matters}
+
+Abstraction isn't just about privacy---it enables new types of analysis impossible at raw scale. Compression matters for three reasons: cognitive scalability, cross-project comparison, and emergent pattern discovery.
+
+\subsection{Cognitive Scalability}
+
+A developer reviewing 40,000 sessions cannot inspect raw traces; they need representations that surface relevant structure while hiding irrelevant detail. The 242$\times$ compression from raw to motifs reduces cognitive load: at the motif level, a developer sees workflow patterns (test-first, refactor-then-extend) rather than individual keystrokes. This enables \emph{human-scale analysis} of large-scale data---patterns visible to humans only after abstraction.
+
+Consider workflow governance: identifying which developers follow test-first patterns requires motif-level analysis. At raw level, the signal is buried in noise; at motif level, procedural templates emerge clearly. Compression enables human oversight of AI-assisted development at scale.
+
+\subsection{Cross-Project Comparison}
+
+Raw traces are project-specific: code, variable names, and file structures are unique to each codebase. Abstraction enables comparing workflows across projects, languages, and teams. At the motif level, a Python refactoring session and a TypeScript refactoring session share procedural templates even when code differs completely.
+
+This enables \emph{cross-project learning}: identifying best practices that generalize (like test-first workflows), discovering common pitfalls (like over-selecting context), and building collective intelligence from diverse codebases. Compression enables shared knowledge without exposing proprietary code.
+
+\subsection{Emergent Pattern Discovery}
+
+Some patterns only emerge through abstraction. Consider workflow efficiency: at raw level, efficiency is buried in implementation details. At motif level, procedural templates reveal which workflows complete faster (test-first vs. implement-then-verify), which patterns lead to fewer revisions, and which approaches scale better.
+
+Abstraction reveals \emph{structural invariants}---patterns that survive across implementations, languages, and projects. These invariants represent procedural knowledge inaccessible from static code: how developers handle errors, sequence operations, and manage complexity. Compression enables discovering these patterns by removing surface-level variation.
+
+\subsection{Privacy-Preserving Sharing}
+
+Compression enables sharing insights without exposing code. Developers can export motif-level patterns (workflow templates, procedural knowledge) while retaining raw traces locally. This enables \emph{selective sharing}: contributing to collective intelligence while preserving privacy.
+
+The abstraction hierarchy provides a privacy-expressiveness frontier: developers choose the abstraction level that balances their privacy needs with analytical utility. Motif-level sharing enables workflow analytics without exposing code; semantic-edit-level sharing enables change pattern analysis without exposing variable names; raw-level sharing enables maximum fidelity when privacy isn't a concern.
+
+\section{Context Selection}
+
+A unique aspect of AI-assisted development is context selection---which files developers include in prompts. This dimension is lens-dependent: different abstraction levels reveal different aspects of context selection behavior.
+
+We define efficiency as files changed per file in context. Analysis reveals over-selection (high context, few changes), file type patterns (some types over-represented), and explicit versus implicit selection (@ mentions yield more focused context).
+
+Context size correlates weakly with output quality, suggesting diminishing returns. Average context is 1.46 files; some prompts include 16+. Temporal analysis shows selection behavior evolving as developers learn what works.
+
+Viewed through different lenses, context selection reveals different insights: at token level, we see which specific files are selected; at semantic-edit level, we see which file types correlate with which change types; at motif level, we see which workflow patterns correlate with efficient context selection. This multi-lens view enables understanding context selection as both a technical choice (which files?) and a procedural pattern (when to include context?).
+
+\section{Steering software engineering}
+
+Once workflows are represented, they become steerable. We can define objectives over processes rather than outputs: minimizing context churn, encouraging test-driven loops, or limiting cascading edits. These constraints act as \emph{regulatory pressures} on development, shaping how humans and agents collaborate.
+
+Beyond abstraction, we analyze how changes propagate through codebases. We treat changes like information diffusion~\citep{goel2016structural}: modifying file $A$ triggers subsequent changes to files $B$, $C$, $D$, forming a directed propagation graph. The small-world coefficient ($\sigma$) follows Watts \& Strogatz~\citep{watts1998collective}; many cascades exhibit $\sigma > 1$, indicating propagation through modular structure. Following Myers~\citep{myers2003software}, co-occurrence networks exhibit scale-free degree distributions with modularity $Q \approx 0.32$.
+
+This shifts the locus of control from code to procedure. Instead of telling models what to write, we regulate how work unfolds. Representations become the interface through which software engineering itself is governed.
+
+\section{The vision: crowdsourced workflow intelligence}
+
+The long-term goal is a shared substrate for learning from real software development while preserving privacy. High-level abstractions can be safely shared across users and organizations, enabling collective intelligence about how effective development happens in practice.
+
+This unlocks three capabilities that are currently missing: (1) the ability to evaluate code agents based on how they perform real software engineering work across different environments, (2) a shared language for analyzing and comparing workflows at scale, and (3) the ability to aggregate and learn from these patterns while preserving developer privacy.
+
+By making workflows measurable, representations turn everyday development into a continuous evaluation and learning process. This is the foundation for AI systems that do not merely write code, but improve how software is made.
+
+\section{Results}
+
+We validate this framework on 40{,}000+ sessions through lens-level evaluation---varying representation while holding tasks constant. Motifs achieve 98.4\% classification accuracy with 242× compression; raw tokens achieve 69.7\%. Structural patterns generalize across languages: motifs reveal shared procedural templates across Python, TypeScript, and Java, while token sequences are language-specific. Network analysis reveals cascade structures (reproduction number $R_0$, small-world clustering) providing vocabulary for understanding how development unfolds. These findings demonstrate that abstraction trades expressiveness for privacy in predictable ways while preserving strategic structure.
+
+\section{Discussion}
+
+The core contribution is demonstrating that learning from program traces in the wild is possible. Analysis reveals that workflows exhibit network properties (reproduction numbers, cascade structures, small-world clustering) that provide vocabulary for understanding how development unfolds. Abstraction trades expressiveness for privacy in predictable ways: higher rungs achieve substantial compression while preserving structural patterns that generalize across languages where token sequences do not. Different abstraction levels reveal different causal chains---motifs show pattern $\rightarrow$ task type relationships, semantic edits show edit sequence $\rightarrow$ workflow relationships, functions show pattern $\rightarrow$ code organization relationships.
+
+These findings raise fundamental questions about how development should be represented, evaluated, and learned from. Viewed through a regulatory lens, programming becomes the act of declaring, evolving, and enforcing intent and regulatory constraints---tests, review policies, performance budgets---while executable code is a derived artifact maintained by humans and agents within those constraints. An operational ontology of software engineering processes emerges: typed objects (files, functions, modules, sessions) and the families of transformations that relate them (edits, refactors, cascades, motifs). This ontology enables reasoning about workflows as structured processes rather than opaque sequences.
+
+The abstraction hierarchy addresses a broader challenge: current systems generate code but miss engineering intuition about constraints (error handling, synchronization, memory safety). Higher rungs encode procedural patterns---motifs capture how developers handle constraints procedurally, not just what code they write. This raises the question: can we learn to express intent at a higher level rather than managing agents to generate low-level code? The observation that structural patterns generalize better than raw content suggests procedural knowledge may be more learnable than syntactic patterns, but this requires validation across domains and developer populations.
+
+Our system exposes telemetry via API rather than static database. Interfaces can be built atop live data streams. This enables real-time feedback loops, selective sharing where developers expose motif-level patterns while retaining raw traces locally, and composable analytics where third parties build tools atop standardized streams.
+
+\subsection{Composable Analytics}
+
+The abstraction hierarchy enables \emph{composable analytics}---building complex insights from simple lens operations. Consider a query like ``Find debugging sessions that followed test-first patterns and resulted in architectural changes'': this requires combining motif-level workflow patterns (debugging, test-first) with module-graph-level architectural analysis (dependency changes). The framework enables answering multi-scale questions by composing operations across abstraction levels.
+
+Different lenses can be combined for richer analysis: motif-level workflow classification combined with semantic-edit-level change detail, or function-level API evolution combined with module-graph-level coupling analysis. This composability enables building sophisticated analytics tools from simple lens primitives---answering questions that span multiple scales and dimensions.
+
+The vision is a query system that automatically selects the right lens (or combination of lenses) for each question: ``Find similar refactoring patterns'' uses motifs, ``Show me the exact changes'' uses semantic edits, ``Analyze architectural impact'' uses module graphs. The framework enables building tools that adaptively choose abstraction levels based on query requirements and privacy constraints.
+
+However, a critical gap exists: no standard for collecting, representing, or aggregating human code feedback data. Today's landscape is fragmented---each IDE, assistant, and organization captures workflow signals in incompatible formats. This creates three problems: 1) no consolidation of feedback from millions of interactions, 2) no personalization without portable histories, and 3) no democratization as only large organizations can study their workflows.
+
+\subsection{Open Questions and Next Steps}
+
+The findings motivate several directions for future work. First, \textbf{regime detection}: analysis reveals that different abstraction levels dominate in different contexts, but can we automatically identify when developers transition between exploration, implementation, and debugging regimes? This would enable dynamic selection of appropriate abstraction levels and evaluation metrics.
+
+Second, \textbf{procedural pattern learning}: the observation that motifs generalize across languages raises the question of whether we can learn procedural templates that encode engineering constraints (error handling patterns, synchronization protocols, memory management strategies) independently of language syntax. This could address the "slop generation" problem by learning when to catch exceptions, when to add synchronization, and which abstractions manage complexity.
+
+Third, \textbf{causal structure in traces}: network analysis reveals propagation patterns, but can we identify which interventions (tool changes, API breaks, deadline pressures) cause which trajectory shifts? Natural experiments in traces provide opportunities for causal inference, but require methods that respect path dependence and non-equilibrium dynamics.
+
+Fourth, \textbf{privacy-expressiveness frontiers}: the trade-off between compression and expressiveness is predictable but not fully characterized. What is the minimum abstraction level that preserves a given class of patterns? Can we design rungs that optimize for specific downstream tasks while maintaining privacy guarantees?
+
+Fifth, \textbf{standards and protocols}: the technical primitives exist---abstraction rungs, differential privacy, federated learning---but the ecosystem lacks coordination. What would open protocols for workflow exchange look like? How can we enable personalized AI systems learning from developer history without exposing code, federated benchmarking sharing performance signals without centralizing traces, and portable profiles transferring across tools?
+
+Sixth, \textbf{workflow quality ground truth}: we can measure cascade footprints, motif efficiency, and context utilization, but what constitutes "good" workflow? Is it speed, correctness, maintainability, or something else? This requires defining evaluation criteria that respect diverse developer preferences and goals in a non-equilibrium system.
+
+Development encompasses more than code---documentation, communication, architecture, collaboration---and this paradigm makes those dimensions measurable, learnable, and governable. The path forward requires both technical advances in representation and abstraction, and ecosystem coordination to enable collective learning while preserving privacy and autonomy.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

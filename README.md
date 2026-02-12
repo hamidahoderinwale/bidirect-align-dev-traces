@@ -1,11 +1,5 @@
 # Representations for Learning from Developer-Agent Workflows
 
-A **multi-level representation engineering framework** for capturing, transforming, and analyzing developer-agent interaction traces from Cursor IDE. Implements a privacy-expressiveness frontier with 6 levels of abstraction for evaluation and privacy-preserving data sharing.
-
-**Key Features**: Privacy-preserving datasets • Context Precision metrics • Graduated disclosure • Behavioral clustering
-
-[Project Site](https://telemetry-landing.netlify.app/) | [Paper (Coming Soon)](#)
-
 ---
 
 ## Quick Start

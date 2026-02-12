@@ -234,8 +234,8 @@ class ConversationManager {
   async getConversationTurns(conversationId) {
     return new Promise((resolve, reject) => {
       this.db.db.all(
-        `SELECT * FROM conversation_turns 
-         WHERE conversation_id = ? 
+        `SELECT * FROM conversation_turns
+         WHERE conversation_id = ?
          ORDER BY turn_index ASC`,
         [conversationId],
         (err, rows) => {
@@ -294,8 +294,8 @@ class ConversationManager {
 
           // Update conversation
           this.db.db.run(
-            `UPDATE conversations 
-             SET message_count = ?, 
+            `UPDATE conversations
+             SET message_count = ?,
                  last_message_at = ?,
                  updated_at = ?
              WHERE id = ?`,

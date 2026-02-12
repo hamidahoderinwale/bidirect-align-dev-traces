@@ -45,7 +45,6 @@ function createStartupService(deps) {
   // can come up quickly even when the underlying DB is large.
   async function loadPersistedData() {
     try {
-      console.log('[SAVE] Initializing database (fast minimal mode)...');
       await persistentDB.init();
 
       // Do NOT run migrations, stats, or historical initialization here.
@@ -56,7 +55,6 @@ function createStartupService(deps) {
       db._entries = db._entries || [];
       db._prompts = db._prompts || [];
 
-      console.log('[SUCCESS] Database connection ready (minimal init, lazy loading enabled)');
       console.log('[MEMORY] In-memory cache disabled - using on-demand queries');
       console.log('[STARTUP] Database init complete, proceeding to start HTTP server...');
     } catch (error) {
@@ -70,11 +68,11 @@ function createStartupService(deps) {
   function startServer() {
     return new Promise((resolve, reject) => {
       console.log('[STARTUP] Starting server initialization...');
-      
+
       // Handle port conflicts - set up error handler BEFORE calling listen()
       server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-          console.error('\n[ERROR] ⚠️  Port conflict detected!');
+          console.error('\n[ERROR] Port conflict detected!');
           console.error(`Port ${PORT} is already in use.`);
           console.error('\nTo fix this, run one of these commands:');
           console.error(`  1. Kill existing process: lsof -ti:${PORT} | xargs kill -9`);
@@ -87,7 +85,7 @@ function createStartupService(deps) {
           reject(err);
         }
       });
-      
+
       loadPersistedData()
         .then(() => {
           console.log('[STARTUP] Database init promise resolved, calling server.listen()...');
@@ -169,7 +167,6 @@ function createStartupService(deps) {
               automaticMiningScheduler.initialize().catch((err) => {
                 console.error('[MINING] Failed to initialize automatic mining:', err.message);
               });
-              console.log('[MINING] Automatic mining scheduler initialized');
             }
 
             // Initialize automatic Hugging Face sync service if available
@@ -177,7 +174,6 @@ function createStartupService(deps) {
               automaticHfSyncService.initialize().catch((err) => {
                 console.error('[HF-SYNC] Failed to initialize automatic HF sync:', err.message);
               });
-              console.log('[HF-SYNC] Automatic Hugging Face sync service initialized');
             }
 
             setInterval(
@@ -286,7 +282,6 @@ function createStartupService(deps) {
                   }
                 });
 
-                console.log('[STATS] ⚡ Stats table initialized (updates every 5 minutes)');
               })
               .catch((err) => {
                 console.warn('[STATS] Stats table initialization failed:', err.message);

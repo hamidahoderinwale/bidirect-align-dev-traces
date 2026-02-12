@@ -617,8 +617,6 @@ class CursorDatabaseParser {
         return fs.existsSync(dbPath);
       });
 
-      console.log(`[AI-SERVICE] Extracting from ${workspaceDirs.length} workspaces...`);
-
       const allMessages = [];
 
       for (const workspaceId of workspaceDirs) {

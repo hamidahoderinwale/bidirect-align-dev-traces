@@ -89,7 +89,7 @@ function createActivityRoutes(deps) {
       console.log(
         `[API] Activity endpoint query results: ${paginatedEntries.length} entries, ${allPrompts.length} prompts, total count: ${totalCount}`
       );
-      
+
       if (paginatedEntries.length === 0 && totalCount > 0) {
         console.warn(
           `[API] Activity endpoint: Database has ${totalCount} entries but query returned 0. Check query filters.`

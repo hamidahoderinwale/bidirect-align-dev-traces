@@ -87,7 +87,6 @@ class WorkspaceDiscoveryService {
    * Initialize the discovery service
    */
   async initialize() {
-    console.log('[WORKSPACE-DISCOVERY] Initializing workspace discovery service...');
 
     // Load any manually registered workspaces
     await this.loadRegisteredWorkspaces();

@@ -232,7 +232,6 @@ class DataCaptureService {
       const prompts = aiServiceMessages || [];
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`[SYNC] Extracted ${prompts.length} prompts from Cursor DB in ${duration}s`);
 
       if (prompts.length === 0) {
         console.log('[SYNC] No prompts to sync');

@@ -28,7 +28,6 @@ function createFileContentsRoutes(deps) {
       }
 
       const entries = await persistentDB.getFileContents(limit);
-      console.log(`[FILE] Processing ${entries.length} files for semantic analysis...`);
 
       // Build file content map with latest content for each file
       const fileContents = new Map();

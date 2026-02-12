@@ -76,10 +76,10 @@ class AuthMiddleware {
 
     // Query parameter (less secure - consider deprecating)
     // Only allow in non-production or if explicitly enabled
-    const allowQueryParam = 
-      process.env.NODE_ENV !== 'production' || 
+    const allowQueryParam =
+      process.env.NODE_ENV !== 'production' ||
       process.env.ALLOW_QUERY_API_KEY === 'true';
-    
+
     if (allowQueryParam && req.query?.api_key) {
       console.warn('[AUTH] API key provided via query parameter (insecure)');
       return req.query.api_key;
@@ -94,14 +94,14 @@ class AuthMiddleware {
   _checkRateLimit(ip) {
     const now = Date.now();
     const key = `rate_limit_${ip}`;
-    
+
     if (!this.failedAttempts.has(key)) {
       this.failedAttempts.set(key, { count: 0, resetAt: now + this.rateLimitWindow });
       return true;
     }
 
     const limit = this.failedAttempts.get(key);
-    
+
     if (now > limit.resetAt) {
       limit.count = 0;
       limit.resetAt = now + this.rateLimitWindow;
@@ -122,13 +122,13 @@ class AuthMiddleware {
   _recordFailedAttempt(ip, apiKey) {
     const key = `failed_${ip}`;
     const now = Date.now();
-    
+
     if (!this.failedAttempts.has(key)) {
       this.failedAttempts.set(key, { count: 1, firstAttempt: now, lockedUntil: null });
     } else {
       const record = this.failedAttempts.get(key);
       record.count++;
-      
+
       // Lock out after max failed attempts
       if (record.count >= this.maxFailedAttempts && !record.lockedUntil) {
         record.lockedUntil = now + this.lockoutDuration;
@@ -151,7 +151,7 @@ class AuthMiddleware {
   _isLockedOut(ip) {
     const key = `failed_${ip}`;
     const record = this.failedAttempts.get(key);
-    
+
     if (!record || !record.lockedUntil) {
       return false;
     }
@@ -172,7 +172,7 @@ class AuthMiddleware {
   _cleanupFailedAttempts() {
     const now = Date.now();
     const keysToDelete = [];
-    
+
     for (const [key, record] of this.failedAttempts.entries()) {
       if (key.startsWith('failed_') && record.lockedUntil && now > record.lockedUntil + this.lockoutDuration) {
         keysToDelete.push(key);
@@ -280,11 +280,11 @@ class AuthMiddleware {
   generateKey(metadata = {}) {
     const newKey = crypto.randomBytes(32).toString('hex');
     this.apiKeys.add(newKey);
-    
+
     if (this.auditLog) {
       this.auditLog('key_generated', `New API key generated: ${newKey.substring(0, 8)}...`);
     }
-    
+
     return newKey;
   }
 
@@ -293,11 +293,11 @@ class AuthMiddleware {
    */
   revokeKey(apiKey) {
     const revoked = this.apiKeys.delete(apiKey);
-    
+
     if (revoked && this.auditLog) {
       this.auditLog('key_revoked', `API key revoked: ${apiKey.substring(0, 8)}...`);
     }
-    
+
     return revoked;
   }
 
@@ -319,7 +319,7 @@ class AuthMiddleware {
     const failedCounts = Array.from(this.failedAttempts.entries())
       .filter(([key]) => key.startsWith('failed_'))
       .map(([, record]) => record.count);
-    
+
     return {
       totalKeys: this.apiKeys.size,
       totalFailedAttempts: failedCounts.reduce((sum, count) => sum + count, 0),

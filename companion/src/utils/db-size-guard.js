@@ -29,7 +29,7 @@ class DBSizeGuard {
         if (this.size > DB_SIZE_THRESHOLD) {
           this.shouldSkipHeavyOps = true;
           this.shouldUseBatching = true;
-          console.warn(`[DB-GUARD] ⚠️  Large database detected: ${(this.size / 1e9).toFixed(2)}GB`);
+          console.warn(`[DB-GUARD] Large database detected: ${(this.size / 1e9).toFixed(2)}GB`);
           console.warn('[DB-GUARD] Skipping heavy startup operations to prevent OOM');
           console.warn('[DB-GUARD] Heavy operations will run in background with batching');
         } else if (this.size > SAFE_STARTUP_THRESHOLD) {

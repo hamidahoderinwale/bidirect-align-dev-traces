@@ -1339,7 +1339,6 @@ class PersistentDB {
           Promise.all(tables)
             .then(() => {
               clearTimeout(tableCreationTimeout);
-              console.log('[SUCCESS] Database tables initialized');
               resolve();
             })
             .catch((err) => {
@@ -1375,7 +1374,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO entries 
+        INSERT OR REPLACE INTO entries
         (id, session_id, workspace_path, file_path, source, before_code, after_code, notes, timestamp, tags, prompt_id, modelInfo, type)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -1438,14 +1437,14 @@ class PersistentDB {
       const terminalBlocksJson = JSON.stringify(terminalBlocks);
 
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO prompts 
+        INSERT OR REPLACE INTO prompts
         (id, timestamp, text, status, linked_entry_id, source,
          workspace_id, workspace_path, workspace_name, composer_id, subtitle,
          lines_added, lines_removed, context_usage, mode, model_type, model_name,
          force_mode, is_auto, type, confidence, added_from_database,
          context_files_json, context_file_count, context_file_count_explicit,
          context_file_count_tabs, context_file_count_auto,
-         thinking_time, thinking_time_seconds, terminal_blocks_json, 
+         thinking_time, thinking_time_seconds, terminal_blocks_json,
          terminal_block_count, has_attachments, attachment_count,
          conversation_title, message_role, parent_conversation_id,
          conversation_id, conversation_index)
@@ -1539,7 +1538,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO events 
+        INSERT OR REPLACE INTO events
         (id, session_id, workspace_path, timestamp, type, details, annotation, intent, tags, ai_generated)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -1665,7 +1664,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO terminal_commands 
+        INSERT OR REPLACE INTO terminal_commands
         (id, command, shell, source, timestamp, workspace, output, exit_code, duration, error, linked_entry_id, linked_prompt_id, session_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -1829,10 +1828,10 @@ class PersistentDB {
       if (entryId !== null) {
         // Fetch specific entry by ID (used for TODO events) - OPTIMIZED with indexed lookup
         query = `
-          SELECT 
-            id, session_id, workspace_path, file_path, source, 
+          SELECT
+            id, session_id, workspace_path, file_path, source,
             notes, timestamp, tags, prompt_id, modelInfo, type
-          FROM entries 
+          FROM entries
           WHERE id = ?
           LIMIT 1
         `;
@@ -1842,10 +1841,10 @@ class PersistentDB {
         // Only include metadata needed for activity list view
         // OPTIMIZATION: Use database-level LIMIT/OFFSET
         query = `
-          SELECT 
-            id, session_id, workspace_path, file_path, source, 
+          SELECT
+            id, session_id, workspace_path, file_path, source,
             notes, timestamp, tags, prompt_id, modelInfo, type
-          FROM entries 
+          FROM entries
         `;
         params = [];
 
@@ -1888,7 +1887,7 @@ class PersistentDB {
       const untilISO = until ? new Date(until).toISOString() : null;
 
       let query = `
-        SELECT * FROM entries 
+        SELECT * FROM entries
         WHERE 1=1
       `;
       const params = [];
@@ -1936,11 +1935,11 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.all(
         `
-        SELECT 
-          id, session_id, workspace_path, file_path, source, 
+        SELECT
+          id, session_id, workspace_path, file_path, source,
           before_code, after_code, notes, timestamp, tags, prompt_id, modelInfo, type
-        FROM entries 
-        ORDER BY timestamp DESC 
+        FROM entries
+        ORDER BY timestamp DESC
         LIMIT ?
       `,
         [limit],
@@ -1973,13 +1972,13 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.all(
         `
-        SELECT 
+        SELECT
           id, file_path, after_code, timestamp
-        FROM entries 
-        WHERE after_code IS NOT NULL 
+        FROM entries
+        WHERE after_code IS NOT NULL
           AND after_code != ''
           AND file_path NOT LIKE '%.git/%'
-        ORDER BY timestamp DESC 
+        ORDER BY timestamp DESC
         LIMIT ?
       `,
         [limit],
@@ -2015,12 +2014,12 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       // OPTIMIZED: Use indexed columns only for faster query
       // Select only essential columns for initial load (avoid loading huge TEXT fields)
-      let query = `SELECT 
-        id, timestamp, status, linked_entry_id, source, 
+      let query = `SELECT
+        id, timestamp, status, linked_entry_id, source,
         workspace_id, workspace_path, workspace_name, composer_id,
-        subtitle, lines_added, lines_removed, context_usage, 
+        subtitle, lines_added, lines_removed, context_usage,
         mode, model_type, model_name, force_mode, is_auto, type, confidence,
-        added_from_database, conversation_id, conversation_index, 
+        added_from_database, conversation_id, conversation_index,
         conversation_title, message_role, parent_conversation_id,
         SUBSTR(text, 1, 500) as text
       FROM prompts`;
@@ -2103,7 +2102,7 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.get(
         `
-        SELECT 
+        SELECT
           (SELECT COALESCE(MAX(id), 0) FROM entries) as entryId,
           (SELECT COALESCE(MAX(id), 0) FROM prompts) as promptId
       `,
@@ -2131,7 +2130,7 @@ class PersistentDB {
       const untilISO = until ? new Date(until).toISOString() : null;
 
       let query = `
-        SELECT * FROM prompts 
+        SELECT * FROM prompts
         WHERE 1=1
       `;
       const params = [];
@@ -2271,7 +2270,7 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.get(
         `
-        SELECT 
+        SELECT
           (SELECT COUNT(*) FROM entries) as entries,
           (SELECT COUNT(*) FROM prompts) as prompts,
           (SELECT COUNT(*) FROM events) as events,
@@ -2304,7 +2303,7 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.all(
         `
-        SELECT 
+        SELECT
           e.*,
           p.text as prompt_text,
           p.status as prompt_status,
@@ -2338,7 +2337,7 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.all(
         `
-        SELECT 
+        SELECT
           p.*,
           e.file_path as entry_file_path,
           e.timestamp as entry_timestamp,
@@ -2369,7 +2368,7 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       this.db.all(
         `
-        SELECT * FROM prompts 
+        SELECT * FROM prompts
         WHERE linked_entry_id IS NOT NULL
         ORDER BY timestamp DESC
       `,
@@ -2438,9 +2437,9 @@ class PersistentDB {
       // Check for orphaned references
       this.db.get(
         `
-        SELECT COUNT(*) as count 
-        FROM entries 
-        WHERE prompt_id IS NOT NULL 
+        SELECT COUNT(*) as count
+        FROM entries
+        WHERE prompt_id IS NOT NULL
           AND prompt_id NOT IN (SELECT id FROM prompts)
       `,
         (err, row) => {
@@ -2449,9 +2448,9 @@ class PersistentDB {
 
           this.db.get(
             `
-          SELECT COUNT(*) as count 
-          FROM prompts 
-          WHERE linked_entry_id IS NOT NULL 
+          SELECT COUNT(*) as count
+          FROM prompts
+          WHERE linked_entry_id IS NOT NULL
             AND linked_entry_id NOT IN (SELECT id FROM entries)
         `,
             (err2, row2) => {
@@ -2461,7 +2460,7 @@ class PersistentDB {
               // Check for null timestamps
               this.db.get(
                 `
-            SELECT 
+            SELECT
               (SELECT COUNT(*) FROM entries WHERE timestamp IS NULL) +
               (SELECT COUNT(*) FROM prompts WHERE timestamp IS NULL) +
               (SELECT COUNT(*) FROM events WHERE timestamp IS NULL) as count
@@ -2508,7 +2507,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT INTO context_snapshots 
+        INSERT INTO context_snapshots
         (prompt_id, timestamp, file_count, token_estimate, truncated, utilization_percent, context_files, at_mentions)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -2545,9 +2544,9 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       this.db.all(
-        `SELECT * FROM context_snapshots 
-         WHERE timestamp >= ? 
-         ORDER BY timestamp DESC 
+        `SELECT * FROM context_snapshots
+         WHERE timestamp >= ?
+         ORDER BY timestamp DESC
          LIMIT ?`,
         [since, limit],
         (err, rows) => {
@@ -2583,8 +2582,8 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       // Get all context snapshots with actual data
       this.db.all(
-        `SELECT context_files, at_mentions FROM context_snapshots 
-         WHERE (context_files IS NOT NULL AND context_files != '[]') 
+        `SELECT context_files, at_mentions FROM context_snapshots
+         WHERE (context_files IS NOT NULL AND context_files != '[]')
             OR (at_mentions IS NOT NULL AND at_mentions != '[]')`,
         (err, rows) => {
           if (err) {
@@ -2645,9 +2644,9 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO context_changes 
-        (id, prompt_id, event_id, task_id, session_id, timestamp, 
-         previous_file_count, current_file_count, added_files, removed_files, 
+        INSERT OR REPLACE INTO context_changes
+        (id, prompt_id, event_id, task_id, session_id, timestamp,
+         previous_file_count, current_file_count, added_files, removed_files,
          unchanged_files, net_change, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -2943,7 +2942,7 @@ class PersistentDB {
 
                 // Now insert the new configuration
                 const insertStmt = this.db.prepare(`
-              INSERT INTO schema_config 
+              INSERT INTO schema_config
               (table_name, field_name, field_type, display_name, description, enabled, config_json, workspace_id, workspace_path, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `);
@@ -3129,7 +3128,7 @@ class PersistentDB {
 
           // Insert status message
           const stmt = this.db.prepare(`
-          INSERT OR REPLACE INTO status_messages 
+          INSERT OR REPLACE INTO status_messages
           (id, timestamp, message, type, action, file_path, file_name, metadata)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
@@ -3601,10 +3600,10 @@ class PersistentDB {
     return new Promise((resolve, reject) => {
       const now = new Date().toISOString();
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO conversations 
-        (id, workspace_id, workspace_path, title, status, tags, metadata, 
+        INSERT OR REPLACE INTO conversations
+        (id, workspace_id, workspace_path, title, status, tags, metadata,
          created_at, updated_at, last_message_at, message_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 
+        VALUES (?, ?, ?, ?, ?, ?, ?,
                 COALESCE(?, ?), ?, ?, ?)
       `);
 
@@ -3675,7 +3674,7 @@ class PersistentDB {
               if (existing) {
                 // Update existing
                 this.db.run(
-                  `UPDATE conversations SET 
+                  `UPDATE conversations SET
                    title = COALESCE(?, title),
                    workspace_path = COALESCE(?, workspace_path),
                    last_message_at = ?,
@@ -3691,7 +3690,7 @@ class PersistentDB {
               } else {
                 // Create new conversation
                 this.db.run(
-                  `INSERT INTO conversations 
+                  `INSERT INTO conversations
                    (id, workspace_id, workspace_path, title, status, created_at, updated_at, last_message_at, message_count)
                    VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?)`,
                   [conversationId, workspaceId, workspacePath, title, now, now, now, messageCount],
@@ -3716,9 +3715,9 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       this.db.all(
-        `SELECT * FROM conversations 
-         WHERE workspace_id = ? 
-         ORDER BY last_message_at DESC 
+        `SELECT * FROM conversations
+         WHERE workspace_id = ?
+         ORDER BY last_message_at DESC
          LIMIT ?`,
         [workspaceId, limit],
         (err, rows) => {
@@ -3786,7 +3785,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT INTO audit_log 
+        INSERT INTO audit_log
         (operation, operation_type, target_type, target_id, workspace_id, user_id, details, status, error_message)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
@@ -3871,7 +3870,7 @@ class PersistentDB {
 
     return new Promise((resolve, reject) => {
       const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO share_links 
+        INSERT OR REPLACE INTO share_links
         (id, share_id, account_id, device_id, workspaces, abstraction_level, filters, created_at, expires_at, access_count, last_accessed, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);

@@ -1,86 +1,36 @@
 {
   "name": "cursor-companion",
   "version": "1.0.0",
-  "description": "Companion service for Cursor Activity Logger - file watcher, diff engine, and MCP server",
+  "description": "Bare bone companion service for Cursor telemetry - terminal version",
   "main": "src/index.js",
   "bin": {
     "cursor-telemetry": "./cli.js"
   },
   "scripts": {
-    "start": "node --max-old-space-size=8192 src/index.js",
-    "dev": "node --max-old-space-size=8192 --watch src/index.js",
-    "shrink-db": "node scripts/shrink-companion-db.js src/data/companion.db",
-    "startup": "./scripts/startup.sh",
-    "health": "node health-check.js",
-    "stats": "sqlite3 data/companion.db 'SELECT COUNT(*) as entries FROM entries; SELECT COUNT(*) as prompts FROM prompts; SELECT COUNT(*) as events FROM events;'",
-    "reasoning-server": "node src/reasoning-server.js",
-    "test": "node --test src/**/*.test.js",
-    "format": "prettier --write \"src/**/*.js\" \"*.json\" \"public/**/*.{js,html,css}\"",
-    "format:check": "prettier --check \"src/**/*.js\" \"*.json\" \"public/**/*.{js,html,css}\"",
-    "lint": "prettier --check \"src/**/*.js\" \"*.json\" \"public/**/*.{js,html,css}\"",
-    "lint:fix": "npm run format",
-    "audit": "npm audit --audit-level=moderate",
-    "audit:fix": "npm audit fix",
-    "outdated": "npm outdated",
-    "check": "npm run format:check && npm run audit",
-    "dashboard": "open http://localhost:43917/dashboard.html || xdg-open http://localhost:43917/dashboard.html"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "format": "prettier --write \"src/**/*.js\"",
+    "lint": "prettier --check \"src/**/*.js\""
   },
   "dependencies": {
     "chokidar": "^3.5.3",
-    "clipboardy": "^4.0.0",
-    "commander": "^11.1.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "diff": "^5.1.0",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
-    "ioredis": "^5.3.2",
-    "lunr": "^2.3.9",
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
-    "nanoid": "^5.0.0",
     "node-fetch": "^3.3.2",
-    "sharp": "^0.33.5",
     "socket.io": "^4.8.1",
     "sqlite3": "^5.1.7",
-    "pg": "^8.11.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
     "prettier": "^3.6.2"
   },
-  "keywords": [
-    "cursor",
-    "telemetry",
-    "file-watcher",
-    "mcp",
-    "privacy",
-    "developer-analytics",
-    "workflow-tracking"
-  ],
-  "author": "Hamidah Oderinwale <oderinwaleh@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hamidahoderinwale/cursor-telemetry.git",
-    "directory": "components/activity-logger/companion"
-  },
-  "homepage": "https://github.com/hamidahoderinwale/cursor-telemetry#readme",
-  "bugs": {
-    "url": "https://github.com/hamidahoderinwale/cursor-telemetry/issues"
-  },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "files": [
-    "src/**/*",
-    "public/**/*",
-    "scripts/**/*",
-    "cli.js",
-    "health-check.js",
-    "package.json",
-    "README.md",
-    "env.example"
-  ]
+  }
 }

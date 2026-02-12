@@ -19,7 +19,7 @@ class SQLiteOptimizer {
       await this.optimizeSettings();
       await this.createPerformanceIndexes();
 
-      console.log('[SQLITE-OPT] ✓ All optimizations applied');
+      console.log('[SQLITE-OPT] All optimizations applied');
     } catch (error) {
       console.warn('[SQLITE-OPT] Some optimizations failed:', error.message);
     }
@@ -35,7 +35,7 @@ class SQLiteOptimizer {
           console.warn('[SQLITE-OPT] Could not enable WAL mode:', err.message);
           reject(err);
         } else {
-          console.log('[SQLITE-OPT] ✓ WAL mode enabled');
+          console.log('[SQLITE-OPT] WAL mode enabled');
           resolve();
         }
       });
@@ -68,7 +68,7 @@ class SQLiteOptimizer {
       }
     }
 
-    console.log('[SQLITE-OPT] ✓ Performance settings applied');
+    console.log('[SQLITE-OPT] Performance settings applied');
   }
 
   /**
@@ -116,7 +116,7 @@ class SQLiteOptimizer {
       }
     }
 
-    console.log(`[SQLITE-OPT] ✓ Created/verified ${created} performance indexes`);
+    console.log(`[SQLITE-OPT] Created/verified ${created} performance indexes`);
   }
 
   /**
@@ -129,7 +129,7 @@ class SQLiteOptimizer {
           console.warn('[SQLITE-OPT] ANALYZE failed:', err.message);
           reject(err);
         } else {
-          console.log('[SQLITE-OPT] ✓ Database analyzed for query optimization');
+          console.log('[SQLITE-OPT] Database analyzed for query optimization');
           resolve();
         }
       });
@@ -149,7 +149,7 @@ class SQLiteOptimizer {
           console.warn('[SQLITE-OPT] VACUUM failed:', err.message);
           reject(err);
         } else {
-          console.log('[SQLITE-OPT] ✓ Database vacuumed successfully');
+          console.log('[SQLITE-OPT] Database vacuumed successfully');
           resolve();
         }
       });

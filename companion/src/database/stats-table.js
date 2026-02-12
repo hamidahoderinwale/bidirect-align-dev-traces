@@ -69,7 +69,6 @@ class StatsTable {
     }
 
     this.initialized = true;
-    console.log('[STATS] Stats table initialized');
   }
 
   /**
@@ -113,21 +112,21 @@ class StatsTable {
       // Get averages for chars
       const avgCharsResult = await (dbType === 'postgres'
         ? this.db.adapter.query(`
-            SELECT 
+            SELECT
               AVG(CAST(after_code_length AS REAL) - CAST(before_code_length AS REAL)) as avg_added,
               AVG(CAST(before_code_length AS REAL) - CAST(after_code_length AS REAL)) as avg_deleted
-            FROM entries 
-            WHERE after_code_length IS NOT NULL 
+            FROM entries
+            WHERE after_code_length IS NOT NULL
               AND before_code_length IS NOT NULL
           `)
         : new Promise((resolve) => {
             this.db.db.get(
               `
-              SELECT 
+              SELECT
                 AVG(CAST(after_code_length AS REAL) - CAST(before_code_length AS REAL)) as avg_added,
                 AVG(CAST(before_code_length AS REAL) - CAST(after_code_length AS REAL)) as avg_deleted
-              FROM entries 
-              WHERE after_code_length IS NOT NULL 
+              FROM entries
+              WHERE after_code_length IS NOT NULL
                 AND before_code_length IS NOT NULL
             `,
               (err, row) => {
@@ -145,21 +144,21 @@ class StatsTable {
       // Get top workspace
       const topWorkspaceResult = await (dbType === 'postgres'
         ? this.db.adapter.query(`
-            SELECT workspace_path, COUNT(*) as count 
-            FROM entries 
-            WHERE workspace_path IS NOT NULL 
-            GROUP BY workspace_path 
-            ORDER BY count DESC 
+            SELECT workspace_path, COUNT(*) as count
+            FROM entries
+            WHERE workspace_path IS NOT NULL
+            GROUP BY workspace_path
+            ORDER BY count DESC
             LIMIT 1
           `)
         : new Promise((resolve) => {
             this.db.db.get(
               `
-              SELECT workspace_path, COUNT(*) as count 
-              FROM entries 
-              WHERE workspace_path IS NOT NULL 
-              GROUP BY workspace_path 
-              ORDER BY count DESC 
+              SELECT workspace_path, COUNT(*) as count
+              FROM entries
+              WHERE workspace_path IS NOT NULL
+              GROUP BY workspace_path
+              ORDER BY count DESC
               LIMIT 1
             `,
               (err, row) => {
@@ -175,21 +174,21 @@ class StatsTable {
       // Get top file
       const topFileResult = await (dbType === 'postgres'
         ? this.db.adapter.query(`
-            SELECT file_path, COUNT(*) as count 
-            FROM entries 
-            WHERE file_path IS NOT NULL 
-            GROUP BY file_path 
-            ORDER BY count DESC 
+            SELECT file_path, COUNT(*) as count
+            FROM entries
+            WHERE file_path IS NOT NULL
+            GROUP BY file_path
+            ORDER BY count DESC
             LIMIT 1
           `)
         : new Promise((resolve) => {
             this.db.db.get(
               `
-              SELECT file_path, COUNT(*) as count 
-              FROM entries 
-              WHERE file_path IS NOT NULL 
-              GROUP BY file_path 
-              ORDER BY count DESC 
+              SELECT file_path, COUNT(*) as count
+              FROM entries
+              WHERE file_path IS NOT NULL
+              GROUP BY file_path
+              ORDER BY count DESC
               LIMIT 1
             `,
               (err, row) => {
@@ -204,9 +203,9 @@ class StatsTable {
       if (dbType === 'postgres') {
         await this.db.adapter.query(
           `
-          INSERT INTO daily_stats 
+          INSERT INTO daily_stats
             (date, total_entries, total_prompts, avg_context_usage, avg_chars_added, avg_chars_deleted, top_workspace, top_file, updated_at)
-          VALUES 
+          VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
           ON CONFLICT (date) DO UPDATE SET
             total_entries = $2,
@@ -232,9 +231,9 @@ class StatsTable {
       } else {
         this.db.db.run(
           `
-          INSERT OR REPLACE INTO daily_stats 
+          INSERT OR REPLACE INTO daily_stats
             (date, total_entries, total_prompts, avg_context_usage, avg_chars_added, avg_chars_deleted, top_workspace, top_file, updated_at)
-          VALUES 
+          VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
         `,
           [

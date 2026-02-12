@@ -1,6 +1,6 @@
 /**
  * Robust Data Capture Service
- * 
+ *
  * Provides persistent storage for all raw data with:
  * - Automatic persistence to database
  * - Data retention policies
@@ -16,7 +16,7 @@ class RobustDataCaptureService {
     this.db = persistentDB;
     this.rawData = rawData; // Keep reference for migration
     this.schema = new RawDataSchema(persistentDB);
-    
+
     // Configuration
     this.config = {
       // Retention policies (in days)
@@ -66,7 +66,6 @@ class RobustDataCaptureService {
   async init() {
     try {
       await this.schema.createTables();
-      console.log('[ROBUST-CAPTURE] Database schema initialized');
 
       // Run migration if enabled and rawData is available
       if (this.config.migration.enabled && this.rawData) {

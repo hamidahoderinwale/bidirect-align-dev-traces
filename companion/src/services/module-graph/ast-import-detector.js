@@ -5,7 +5,7 @@
 
 const path = require('path');
 const fs = require('fs').promises;
-const Rung2ASTParser = require('../rung2/rung2-ast-parser');
+const Rung2ASTParser = require('../rung2/ast-parser');
 const { getConfig } = require('./config');
 
 class ASTImportDetector {

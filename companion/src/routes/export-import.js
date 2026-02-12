@@ -12,9 +12,9 @@ function createExportImportRoutes(deps) {
     dataAccessControl,
     motifService,
     moduleGraphService,
-    rung1Service,
-    rung2Service,
-    rung3Service,
+    tokensService,
+    editsService,
+    functionsService,
     exportHistoryService,
     robustDataCapture,
     rawData,
@@ -547,17 +547,17 @@ function createExportImportRoutes(deps) {
       }
 
       // Functions: Function-level representation (Medium Privacy)
-      if (!excludeRung3 && rung3Service) {
+      if (!excludeRung3 && functionsService) {
         writeChunk('    "functions": {\n');
         writeChunk('      "version": "1.0",\n');
         writeChunk('      "level": "functions",\n');
         writeChunk('      "description": "Function-level changes and callgraph updates",\n');
         try {
           const workspace = req.query.workspace || req.query.workspace_path || null;
-          const changes = await rung3Service.getFunctionChanges(workspace, {});
-          const functions = await rung3Service.getFunctions(workspace, {});
-          const callgraph = await rung3Service.getCallGraph(workspace);
-          const stats = await rung3Service.getFunctionStats(workspace);
+          const changes = await functionsService.getFunctionChanges(workspace, {});
+          const functions = await functionsService.getFunctions(workspace, {});
+          const callgraph = await functionsService.getCallGraph(workspace);
+          const stats = await functionsService.getFunctionStats(workspace);
 
           writeChunk(
             '      "functionChanges": ' +
@@ -597,15 +597,15 @@ function createExportImportRoutes(deps) {
       }
 
       // Semantic Edits: Statement-level (semantic edit scripts) (Low Privacy)
-      if (!excludeRung2 && rung2Service) {
+      if (!excludeRung2 && editsService) {
         writeChunk('    "semantic_edits": {\n');
         writeChunk('      "version": "1.0",\n');
         writeChunk('      "level": "semantic_edits",\n');
         writeChunk('      "description": "Semantic edit scripts from AST differencing",\n');
         try {
           const workspace = req.query.workspace || req.query.workspace_path || null;
-          const scripts = await rung2Service.getEditScripts(workspace, {});
-          const operations = await rung2Service.getOperationTypes(workspace);
+          const scripts = await editsService.getEditScripts(workspace, {});
+          const operations = await editsService.getOperationTypes(workspace);
 
           writeChunk(
             '      "editScripts": ' +
@@ -631,7 +631,7 @@ function createExportImportRoutes(deps) {
       }
 
       // Tokens: Token-level abstraction (Lowest Privacy)
-      if (!excludeRung1 && rung1Service) {
+      if (!excludeRung1 && tokensService) {
         writeChunk('    "tokens": {\n');
         writeChunk('      "version": "1.0",\n');
         writeChunk('      "level": "tokens",\n');
@@ -661,18 +661,18 @@ function createExportImportRoutes(deps) {
               : req.query.rung1_fuzz_semantic_expressiveness === 'true';
 
           // Temporarily update Rung 1 service with options
-          const originalPIIOptions = { ...rung1Service.piiOptions };
-          const originalFuzzOption = rung1Service.fuzzSemanticExpressiveness;
-          rung1Service.updatePIIOptions(piiOptions);
-          rung1Service.setFuzzSemanticExpressiveness(fuzzSemanticExpressiveness);
+          const originalPIIOptions = { ...tokensService.piiOptions };
+          const originalFuzzOption = tokensService.fuzzSemanticExpressiveness;
+          tokensService.updatePIIOptions(piiOptions);
+          tokensService.setFuzzSemanticExpressiveness(fuzzSemanticExpressiveness);
 
           // Get tokens with options applied
-          const tokens = await rung1Service.getTokens(workspace, {});
-          const stats = await rung1Service.getTokenStats(workspace);
+          const tokens = await tokensService.getTokens(workspace, {});
+          const stats = await tokensService.getTokenStats(workspace);
 
           // Restore original options
-          rung1Service.updatePIIOptions(originalPIIOptions);
-          rung1Service.setFuzzSemanticExpressiveness(originalFuzzOption);
+          tokensService.updatePIIOptions(originalPIIOptions);
+          tokensService.setFuzzSemanticExpressiveness(originalFuzzOption);
 
           writeChunk(
             '      "tokens": ' +
@@ -1735,13 +1735,13 @@ function createExportImportRoutes(deps) {
 
       // Get Functions data (Function-level representation) - Medium Privacy
       let rung3Data = null;
-      if (!excludeRung3 && rung3Service) {
+      if (!excludeRung3 && functionsService) {
         try {
           const workspace = req.query.workspace || req.query.workspace_path || null;
-          const changes = await rung3Service.getFunctionChanges(workspace, {});
-          const functions = await rung3Service.getFunctions(workspace, {});
-          const callgraph = await rung3Service.getCallGraph(workspace);
-          const stats = await rung3Service.getFunctionStats(workspace);
+          const changes = await functionsService.getFunctionChanges(workspace, {});
+          const functions = await functionsService.getFunctions(workspace, {});
+          const callgraph = await functionsService.getCallGraph(workspace);
+          const stats = await functionsService.getFunctionStats(workspace);
           rung3Data = {
             version: '1.0',
             level: 'functions',
@@ -1763,11 +1763,11 @@ function createExportImportRoutes(deps) {
 
       // Get Semantic Edits data (Statement-level semantic edit scripts) - Low Privacy
       let rung2Data = null;
-      if (!excludeRung2 && rung2Service) {
+      if (!excludeRung2 && editsService) {
         try {
           const workspace = req.query.workspace || req.query.workspace_path || null;
-          const scripts = await rung2Service.getEditScripts(workspace, {});
-          const operations = await rung2Service.getOperationTypes(workspace);
+          const scripts = await editsService.getEditScripts(workspace, {});
+          const operations = await editsService.getOperationTypes(workspace);
           rung2Data = {
             version: '1.0',
             level: 'semantic_edits',
@@ -1787,7 +1787,7 @@ function createExportImportRoutes(deps) {
 
       // Get Tokens data (Token-level abstraction) - Lowest Privacy
       let rung1Data = null;
-      if (!excludeRung1 && rung1Service) {
+      if (!excludeRung1 && tokensService) {
         try {
           const workspace = req.query.workspace || req.query.workspace_path || null;
 
@@ -1811,18 +1811,18 @@ function createExportImportRoutes(deps) {
               : req.query.rung1_fuzz_semantic_expressiveness === 'true';
 
           // Temporarily update Tokens service with options
-          const originalPIIOptions = { ...rung1Service.piiOptions };
-          const originalFuzzOption = rung1Service.fuzzSemanticExpressiveness;
-          rung1Service.updatePIIOptions(piiOptions);
-          rung1Service.setFuzzSemanticExpressiveness(fuzzSemanticExpressiveness);
+          const originalPIIOptions = { ...tokensService.piiOptions };
+          const originalFuzzOption = tokensService.fuzzSemanticExpressiveness;
+          tokensService.updatePIIOptions(piiOptions);
+          tokensService.setFuzzSemanticExpressiveness(fuzzSemanticExpressiveness);
 
           // Get tokens with options applied
-          const tokens = await rung1Service.getTokens(workspace, {});
-          const stats = await rung1Service.getTokenStats(workspace);
+          const tokens = await tokensService.getTokens(workspace, {});
+          const stats = await tokensService.getTokenStats(workspace);
 
           // Restore original options
-          rung1Service.updatePIIOptions(originalPIIOptions);
-          rung1Service.setFuzzSemanticExpressiveness(originalFuzzOption);
+          tokensService.updatePIIOptions(originalPIIOptions);
+          tokensService.setFuzzSemanticExpressiveness(originalFuzzOption);
 
           rung1Data = {
             version: '1.0',
@@ -2669,7 +2669,6 @@ function createExportImportRoutes(deps) {
 
       // Import entries
       if (data.entries && Array.isArray(data.entries)) {
-        console.log(`[IMPORT] Processing ${data.entries.length} entries...`);
 
         for (const entry of data.entries) {
           try {
@@ -2712,7 +2711,6 @@ function createExportImportRoutes(deps) {
 
       // Import prompts
       if (data.prompts && Array.isArray(data.prompts)) {
-        console.log(`[IMPORT] Processing ${data.prompts.length} prompts...`);
 
         for (const prompt of data.prompts) {
           try {
@@ -2793,7 +2791,6 @@ function createExportImportRoutes(deps) {
 
       // Import events
       if (data.events && Array.isArray(data.events)) {
-        console.log(`[IMPORT] Processing ${data.events.length} events...`);
 
         for (const event of data.events) {
           try {
@@ -2821,7 +2818,6 @@ function createExportImportRoutes(deps) {
 
       // Import terminal commands
       if (data.terminal_commands && Array.isArray(data.terminal_commands)) {
-        console.log(`[IMPORT] Processing ${data.terminal_commands.length} terminal commands...`);
 
         for (const cmd of data.terminal_commands) {
           try {
@@ -2856,7 +2852,6 @@ function createExportImportRoutes(deps) {
 
       // Import context snapshots (if present)
       if (data.context_snapshots && Array.isArray(data.context_snapshots)) {
-        console.log(`[IMPORT] Processing ${data.context_snapshots.length} context snapshots...`);
         // Context snapshots are typically derived from prompts, so we'll skip explicit import
         // unless there's a dedicated table for them
         stats.contextSnapshots.skipped = data.context_snapshots.length;
@@ -2864,7 +2859,6 @@ function createExportImportRoutes(deps) {
 
       // Import workspaces (add to in-memory db.workspaces)
       if (data.workspaces && Array.isArray(data.workspaces)) {
-        console.log(`[IMPORT] Processing ${data.workspaces.length} workspaces...`);
 
         if (!dryRun) {
           for (const workspace of data.workspaces) {
@@ -2888,7 +2882,6 @@ function createExportImportRoutes(deps) {
 
       // Reload in-memory data from database after import
       if (!dryRun) {
-        console.log('[IMPORT] Reloading in-memory data from database...');
         const recentEntries = await persistentDB.getRecentEntries(1000);
         const recentPrompts = await persistentDB.getRecentPrompts(1000);
         db.entries = recentEntries;

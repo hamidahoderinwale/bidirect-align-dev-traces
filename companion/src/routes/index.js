@@ -17,7 +17,6 @@ const registerFeatureRoutes = require('./features');
  * @param {Object} deps - Dependencies object containing all services
  */
 function registerAllRoutes(app, deps) {
-  console.log('[ROUTES] Registering all routes...');
 
   // System routes first (health, status, etc.)
   registerSystemRoutes(app, deps);
@@ -34,7 +33,6 @@ function registerAllRoutes(app, deps) {
   // Feature routes (states, sharing, etc.)
   registerFeatureRoutes(app, deps);
 
-  console.log('[ROUTES] All routes registered successfully');
 }
 
 module.exports = {

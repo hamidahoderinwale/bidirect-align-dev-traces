@@ -12,13 +12,10 @@ let native = null;
 let useNative = false;
 
 try {
-  native = require('../../native');
-  useNative = true;
-  console.log('[DIFF] ⚡ Using Rust native module for 5-10x faster diffs');
+  // Native module logic removed for bare-bone version
+  useNative = false;
 } catch (error) {
-  console.log(
-    '[DIFF] Using JavaScript diff (build native module with: cd native && npm run build)'
-  );
+  // Fallback to JS
 }
 
 /**

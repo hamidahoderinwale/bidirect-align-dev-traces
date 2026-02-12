@@ -331,7 +331,6 @@ class ModuleGraphExtractor {
    * Extract all module graph data
    */
   async extractAll(workspacePath = null) {
-    console.log('[MODULE-GRAPH] Extracting file-level data...');
 
     try {
       const timeout = getConfig('extraction.timeout', 20000);

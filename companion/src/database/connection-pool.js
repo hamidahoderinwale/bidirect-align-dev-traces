@@ -53,7 +53,6 @@ class ConnectionPool {
       await client.query('SELECT NOW()');
       client.release();
 
-      console.log('[POOL] ✅ Connection pool initialized');
       console.log(`[POOL]    Max connections: ${this.options.max}`);
       console.log(`[POOL]    Min connections: ${this.options.min}`);
     } catch (error) {

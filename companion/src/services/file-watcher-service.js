@@ -53,7 +53,6 @@ function createFileWatcherService(deps) {
   }
 
   async function processFileChange(filePath) {
-    console.log(` Processing file change: ${filePath}`);
 
     const workspacePath = await detectWorkspace(filePath);
     const workspaceSession = getWorkspaceSession(workspacePath);

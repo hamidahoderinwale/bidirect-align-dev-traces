@@ -13,14 +13,14 @@ class DatabaseSpeedOptimizations {
    */
   async applyAll() {
     console.log('[DB Optimization] Applying speed optimizations...');
-    
+
     try {
       await this.createIndexes();
       await this.optimizeQueries();
       await this.enablePerformanceSettings();
       await this.createMaterializedViews();
-      
-      console.log('[DB Optimization] ✓ All optimizations applied');
+
+      console.log('[DB Optimization] All optimizations applied');
       return { success: true };
     } catch (error) {
       console.error('[DB Optimization] Error:', error);
@@ -39,7 +39,7 @@ class DatabaseSpeedOptimizations {
       'CREATE INDEX IF NOT EXISTS idx_sessions_workspace ON sessions(workspace_path)',
       'CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time DESC)',
       'CREATE INDEX IF NOT EXISTS idx_sessions_workspace_time ON sessions(workspace_path, start_time DESC)',
-      
+
       // Event indexes
       'CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)',
       'CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)',
@@ -48,23 +48,23 @@ class DatabaseSpeedOptimizations {
       'CREATE INDEX IF NOT EXISTS idx_events_workspace ON events(workspace_path)',
       'CREATE INDEX IF NOT EXISTS idx_events_annotation ON events(annotation)',
       'CREATE INDEX IF NOT EXISTS idx_events_intent ON events(intent)',
-      
+
       // Entry indexes
       'CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id)',
       'CREATE INDEX IF NOT EXISTS idx_entries_timestamp ON entries(timestamp DESC)',
       'CREATE INDEX IF NOT EXISTS idx_entries_workspace ON entries(workspace_path)',
       'CREATE INDEX IF NOT EXISTS idx_entries_file_path ON entries(file_path)',
-      
+
       // Prompt indexes
       'CREATE INDEX IF NOT EXISTS idx_prompts_session ON prompts(session_id)',
       'CREATE INDEX IF NOT EXISTS idx_prompts_timestamp ON prompts(timestamp DESC)',
       'CREATE INDEX IF NOT EXISTS idx_prompts_conversation ON prompts(conversation_id)',
       'CREATE INDEX IF NOT EXISTS idx_prompts_workspace ON prompts(workspace_path)',
-      
+
       // JSON path indexes for commonly accessed JSON fields
       'CREATE INDEX IF NOT EXISTS idx_events_file_path ON events(json_extract(details, "$.file_path"))',
       'CREATE INDEX IF NOT EXISTS idx_events_operation ON events(json_extract(details, "$.operation"))',
-      
+
       // Compound indexes for common query patterns
       'CREATE INDEX IF NOT EXISTS idx_events_session_type_time ON events(session_id, type, timestamp DESC)',
       'CREATE INDEX IF NOT EXISTS idx_prompts_session_time ON prompts(session_id, timestamp DESC)',
@@ -79,7 +79,7 @@ class DatabaseSpeedOptimizations {
       }
     }
 
-    console.log(`[DB Optimization] ✓ Created ${indexes.length} indexes`);
+    console.log(`[DB Optimization] Created ${indexes.length} indexes`);
   }
 
   /**
@@ -91,25 +91,25 @@ class DatabaseSpeedOptimizations {
     const settings = [
       // Increase cache size (10MB)
       'PRAGMA cache_size = -10000',
-      
+
       // Use WAL mode for better concurrency
       'PRAGMA journal_mode = WAL',
-      
+
       // Faster synchronization
       'PRAGMA synchronous = NORMAL',
-      
+
       // Keep temp tables in memory
       'PRAGMA temp_store = MEMORY',
-      
+
       // Increase page size for better performance
       'PRAGMA page_size = 4096',
-      
+
       // Enable automatic indexing for temp tables
       'PRAGMA automatic_index = ON',
-      
+
       // Optimize for faster reads
       'PRAGMA query_only = OFF',
-      
+
       // Memory-mapped I/O (256MB)
       'PRAGMA mmap_size = 268435456',
     ];
@@ -122,7 +122,7 @@ class DatabaseSpeedOptimizations {
       }
     }
 
-    console.log('[DB Optimization] ✓ Performance settings enabled');
+    console.log('[DB Optimization] Performance settings enabled');
   }
 
   /**
@@ -133,7 +133,7 @@ class DatabaseSpeedOptimizations {
 
     // Analyze tables to update statistics
     const tables = ['sessions', 'events', 'entries', 'prompts'];
-    
+
     for (const table of tables) {
       try {
         await this.db.run(`ANALYZE ${table}`);
@@ -149,7 +149,7 @@ class DatabaseSpeedOptimizations {
       console.log(`[DB Optimization] Optimize warning: ${error.message}`);
     }
 
-    console.log('[DB Optimization] ✓ Query optimizations complete');
+    console.log('[DB Optimization] Query optimizations complete');
   }
 
   /**
@@ -161,7 +161,7 @@ class DatabaseSpeedOptimizations {
     // Session summary view
     const sessionSummaryView = `
       CREATE TABLE IF NOT EXISTS session_summary AS
-      SELECT 
+      SELECT
         s.id as session_id,
         s.workspace_path,
         s.start_time,
@@ -193,17 +193,17 @@ class DatabaseSpeedOptimizations {
       // Drop existing views first
       await this.db.run('DROP TABLE IF EXISTS session_summary');
       await this.db.run('DROP TABLE IF EXISTS workspace_activity');
-      
+
       // Create new views
       await this.db.run(sessionSummaryView);
       await this.db.run(workspaceActivityView);
-      
+
       // Create indexes on materialized views
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_session_summary_workspace ON session_summary(workspace_path)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_session_summary_time ON session_summary(start_time DESC)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_workspace_activity_date ON workspace_activity(activity_date DESC)');
-      
-      console.log('[DB Optimization] ✓ Materialized views created');
+
+      console.log('[DB Optimization] Materialized views created');
     } catch (error) {
       console.log(`[DB Optimization] View warning: ${error.message}`);
     }
@@ -214,11 +214,11 @@ class DatabaseSpeedOptimizations {
    */
   async refreshMaterializedViews() {
     console.log('[DB Optimization] Refreshing materialized views...');
-    
+
     try {
       // Drop and recreate for now (could be optimized with incremental updates)
       await this.createMaterializedViews();
-      console.log('[DB Optimization] ✓ Views refreshed');
+      console.log('[DB Optimization] Views refreshed');
     } catch (error) {
       console.error('[DB Optimization] Refresh error:', error);
     }
@@ -237,8 +237,8 @@ class DatabaseSpeedOptimizations {
     // Get list of indexes
     try {
       const indexes = await this.db.all(`
-        SELECT name, tbl_name, sql 
-        FROM sqlite_master 
+        SELECT name, tbl_name, sql
+        FROM sqlite_master
         WHERE type = 'index' AND name LIKE 'idx_%'
         ORDER BY tbl_name, name
       `);
@@ -263,7 +263,7 @@ class DatabaseSpeedOptimizations {
       const pageCount = await this.db.get('PRAGMA page_count');
       const pageSize = await this.db.get('PRAGMA page_size');
       const freelistCount = await this.db.get('PRAGMA freelist_count');
-      
+
       status.stats = {
         total_pages: pageCount.page_count,
         page_size: pageSize.page_size,
@@ -284,21 +284,21 @@ class DatabaseSpeedOptimizations {
    */
   async runMaintenance() {
     console.log('[DB Optimization] Running maintenance...');
-    
+
     try {
       // Update statistics
       await this.db.run('ANALYZE');
-      
+
       // Optimize queries
       await this.db.run('PRAGMA optimize');
-      
+
       // Incremental vacuum (doesn't block)
       await this.db.run('PRAGMA incremental_vacuum(100)');
-      
+
       // Refresh materialized views
       await this.refreshMaterializedViews();
-      
-      console.log('[DB Optimization] ✓ Maintenance complete');
+
+      console.log('[DB Optimization] Maintenance complete');
       return { success: true };
     } catch (error) {
       console.error('[DB Optimization] Maintenance error:', error);

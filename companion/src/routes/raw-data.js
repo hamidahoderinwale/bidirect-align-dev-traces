@@ -8,7 +8,7 @@ function createRawDataRoutes(deps) {
   app.get('/raw-data/system-resources', async (req, res) => {
     try {
       const { limit = 10000, since } = req.query;
-      
+
       // Try to get from database first (if robust capture is available)
       if (robustDataCapture) {
         try {
@@ -16,11 +16,11 @@ function createRawDataRoutes(deps) {
             parseInt(limit),
             since ? parseInt(since) : null
           );
-          
+
           // Get total count from database
           const stats = await robustDataCapture.schema.getTableStats();
           const total = stats.system_resources || 0;
-          
+
           return res.json({
             success: true,
             data: data,
@@ -33,7 +33,7 @@ function createRawDataRoutes(deps) {
           // Fall through to in-memory fallback
         }
       }
-      
+
       // Fallback to in-memory data
       let data = rawData.systemResources || [];
       if (since) {
@@ -61,7 +61,7 @@ function createRawDataRoutes(deps) {
   app.get('/raw-data/git', async (req, res) => {
     try {
       const { limit = 50, since } = req.query;
-      
+
       if (robustDataCapture) {
         try {
           const data = await robustDataCapture.getGitData(
@@ -70,7 +70,7 @@ function createRawDataRoutes(deps) {
           );
           const stats = await robustDataCapture.schema.getTableStats();
           const total = stats.git_data || 0;
-          
+
           return res.json({
             success: true,
             data: data,
@@ -82,7 +82,7 @@ function createRawDataRoutes(deps) {
           // Fall through to in-memory
         }
       }
-      
+
       let data = rawData.gitData?.status || [];
       if (since) {
         const sinceTime = parseInt(since);
@@ -106,7 +106,7 @@ function createRawDataRoutes(deps) {
   app.get('/raw-data/cursor-database', async (req, res) => {
     try {
       const { limit = 20, since } = req.query;
-      
+
       if (robustDataCapture) {
         try {
           const data = await robustDataCapture.getCursorDbConversations(
@@ -115,7 +115,7 @@ function createRawDataRoutes(deps) {
           );
           const stats = await robustDataCapture.schema.getTableStats();
           const total = stats.cursor_db_conversations || 0;
-          
+
           return res.json({
             success: true,
             data: data,
@@ -127,7 +127,7 @@ function createRawDataRoutes(deps) {
           // Fall through to in-memory
         }
       }
-      
+
       let data = rawData.cursorDatabase?.conversations || [];
       if (since) {
         const sinceTime = parseInt(since);
@@ -151,7 +151,7 @@ function createRawDataRoutes(deps) {
   app.get('/raw-data/apple-script', async (req, res) => {
     try {
       const { limit = 10000, since } = req.query;
-      
+
       if (robustDataCapture) {
         try {
           const data = await robustDataCapture.getAppleScriptState(
@@ -160,7 +160,7 @@ function createRawDataRoutes(deps) {
           );
           const stats = await robustDataCapture.schema.getTableStats();
           const total = stats.apple_script_state || 0;
-          
+
           return res.json({
             success: true,
             data: data,
@@ -172,7 +172,7 @@ function createRawDataRoutes(deps) {
           // Fall through to in-memory
         }
       }
-      
+
       let data = rawData.appleScript?.appState || [];
       if (since) {
         const sinceTime = parseInt(since);
@@ -196,7 +196,7 @@ function createRawDataRoutes(deps) {
   app.get('/raw-data/logs', async (req, res) => {
     try {
       const { limit = 50, since } = req.query;
-      
+
       if (robustDataCapture) {
         try {
           const data = await robustDataCapture.getLogs(
@@ -205,7 +205,7 @@ function createRawDataRoutes(deps) {
           );
           const stats = await robustDataCapture.schema.getTableStats();
           const total = stats.cursor_logs || 0;
-          
+
           return res.json({
             success: true,
             data: data,
@@ -217,7 +217,7 @@ function createRawDataRoutes(deps) {
           // Fall through to in-memory
         }
       }
-      
+
       let data = rawData.logs?.cursor || [];
       if (since) {
         const sinceTime = parseInt(since);
